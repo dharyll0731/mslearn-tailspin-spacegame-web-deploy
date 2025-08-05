@@ -11,13 +11,13 @@ stages:
   - job: 'Build'
     displayName: 'Build job'
     pool:
-      vmImage: 'ubuntu-20.04'
+      vmImage: 'ubuntu-22.04'
       demands:
       - npm
 
     variables:
       wwwrootDir: 'Tailspin.SpaceGame.Web/wwwroot'
-      dotnetSdkVersion: '6.x'
+      dotnetSdkVersion: '8.x'
 
     steps:
     - task: UseDotNet@2
@@ -25,10 +25,11 @@ stages:
       inputs:
         version: '$(dotnetSdkVersion)'
 
-    - task: Npm@1
-      displayName: 'Run npm install'
-      inputs:
-        verbose: false
+    - script: |
+        npm uninstall node-sass
+        npm install
+        npm install node-sass@latest
+      displayName: 'Reinstall latest node-sass and install dependencies'
 
     - script: './node_modules/.bin/node-sass $(wwwrootDir) --output $(wwwrootDir)'
       displayName: 'Compile Sass assets'
@@ -71,8 +72,8 @@ stages:
   jobs:
   - deployment: Deploy
     pool:
-      vmImage: 'ubuntu-20.04'
-    environment: dev
+      vmImage: 'ubuntu-22.04'
+    environment: cadenceDev
     variables:
     - group: Release
     strategy:
@@ -85,7 +86,7 @@ stages:
             displayName: 'Azure App Service Deploy: website'
             inputs:
               azureSubscription: 'Resource Manager - Tailspin - Space Game'
-              appName: '$(WebAppNameDev)'
+              appName: 'tailspin-space-game-web-dev-11337'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
 
 - stage: 'Test'
@@ -94,8 +95,8 @@ stages:
   jobs:
   - deployment: Deploy
     pool:
-      vmImage: 'ubuntu-20.04'
-    environment: test
+      vmImage: 'ubuntu-22.04'
+    environment: cadenceTest
     variables:
     - group: 'Release'
     strategy:
@@ -108,7 +109,7 @@ stages:
             displayName: 'Azure App Service Deploy: website'
             inputs:
               azureSubscription: 'Resource Manager - Tailspin - Space Game'
-              appName: '$(WebAppNameTest)'
+              appName: 'tailspin-space-game-web-test-11337'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
 
 - stage: 'Staging'
@@ -117,8 +118,8 @@ stages:
   jobs:
   - deployment: Deploy
     pool:
-      vmImage: 'ubuntu-20.04'
-    environment: staging
+      vmImage: 'ubuntu-22.04'
+    environment: cadenceStaging
     variables:
     - group: 'Release'
     strategy:
@@ -131,5 +132,5 @@ stages:
             displayName: 'Azure App Service Deploy: website'
             inputs:
               azureSubscription: 'Resource Manager - Tailspin - Space Game'
-              appName: '$(WebAppNameStaging)'
+              appName: 'tailspin-space-game-web-staging-11337'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
